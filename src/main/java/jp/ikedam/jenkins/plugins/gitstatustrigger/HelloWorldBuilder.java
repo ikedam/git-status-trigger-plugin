@@ -1,14 +1,12 @@
 package jp.ikedam.jenkins.plugins.gitstatustrigger;
 import hudson.Launcher;
 import hudson.Extension;
-import hudson.FilePath;
 import hudson.util.FormValidation;
+import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.BuildListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -33,7 +31,7 @@ import java.io.IOException;
  *
  * @author Kohsuke Kawaguchi
  */
-public class HelloWorldBuilder extends Builder implements SimpleBuildStep {
+public class HelloWorldBuilder extends Builder {
 
     private final String name;
 
@@ -51,7 +49,7 @@ public class HelloWorldBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         // This is where you 'build' the project.
         // Since this is a dummy, we just say 'hello world' and call that a build.
 
@@ -60,6 +58,8 @@ public class HelloWorldBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println("Bonjour, "+name+"!");
         else
             listener.getLogger().println("Hello, "+name+"!");
+
+        return true;
     }
 
     // Overridden for better type safety.
