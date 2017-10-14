@@ -11,7 +11,7 @@
   </parent>
   <groupId>jp.ikedam.jenkins.plugins</groupId>
   <artifactId>git-status-trigger</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>

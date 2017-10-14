@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+Triggered for git notfication:
+<dl>
+  <dt>Repository</dt>
+    <dd>${it.uri}</dd>
+  <dt>Branch</dt>
+    <dd>${it.branchForDisplay}</dd>
+</dl>
+</j:jelly>

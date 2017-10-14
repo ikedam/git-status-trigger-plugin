@@ -1,2 +1,9 @@
-# git-status-trigger-plugin
-Jenkins plugin to trigger builds when GitStatus.Listener fire.
+Git Status Trigger plugin
+=========================
+
+Jenkins plugin to trigger builds when push notifications from git repositories.
+
+You can trigger projects that not configured to use Git as SCM.
+
+See [the Wiki of Git Plugin](https://wiki.jenkins.io/display/JENKINS/Git+Plugin#GitPlugin-Pushnotificationfromrepository)
+for details of push notifications.
