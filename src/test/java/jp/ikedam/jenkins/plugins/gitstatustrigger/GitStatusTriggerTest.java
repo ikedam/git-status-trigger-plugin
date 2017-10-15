@@ -30,15 +30,13 @@ import static org.junit.Assert.assertNull;
 
 import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule.WebClient;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
-import hudson.model.Job;
 
 /**
  * Tests for {@link GitStatusTrigger}
@@ -46,15 +44,8 @@ import hudson.model.Job;
 public class GitStatusTriggerTest {
     private static final int ACTIVITY_WAIT = 60000;
 
-    @ClassRule
-    public static GitStatusTriggerJenkinsRule j = new GitStatusTriggerJenkinsRule();
-
-    @After
-    public void cleanAllJobs() throws Exception {
-        for (Job<?, ?> job: j.jenkins.getAllItems(Job.class)) {
-            job.delete();
-        }
-    }
+    @Rule
+    public GitStatusTriggerJenkinsRule j = new GitStatusTriggerJenkinsRule();
 
     public void testNoConfiguration() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
@@ -276,6 +267,48 @@ public class GitStatusTriggerTest {
     }
 
     @Test
+    public void testTriggerWithWildcardBranchMatch3() throws Exception {
+        FreeStyleProject p = j.createFreeStyleProject();
+
+        p.addTrigger(new GitStatusTrigger(Arrays.asList(
+            new GitStatusTarget(
+                "https://github.com/ikedam/git-status-trigger-plugin",
+                "*/test"
+            )
+        )));
+
+        j.configRoundtrip((Item)p);
+
+        j.requestGitNotification(
+            "https://github.com/ikedam/git-status-trigger-plugin",
+            "feature/newfeature/test"
+        );
+        j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
+        assertNotNull(p.getLastBuild());
+    }
+
+    @Test
+    public void testTriggerWithWildcardBranchMatch4() throws Exception {
+        FreeStyleProject p = j.createFreeStyleProject();
+
+        p.addTrigger(new GitStatusTrigger(Arrays.asList(
+            new GitStatusTarget(
+                "https://github.com/ikedam/git-status-trigger-plugin",
+                "feature/*"
+            )
+        )));
+
+        j.configRoundtrip((Item)p);
+
+        j.requestGitNotification(
+            "https://github.com/ikedam/git-status-trigger-plugin",
+            "feature/newfeature/test"
+        );
+        j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
+        assertNotNull(p.getLastBuild());
+    }
+
+    @Test
     public void testTriggerWithWildcardBranchNotMatch1() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
 
@@ -294,6 +327,7 @@ public class GitStatusTriggerTest {
         j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
         assertNull(p.getLastBuild());
     }
+
     @Test
     public void testTriggerWithWildcardBranchNotMatch2() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
@@ -310,6 +344,48 @@ public class GitStatusTriggerTest {
         j.requestGitNotification(
             "https://github.com/ikedam/git-status-trigger-plugin",
             "feature/newfeature"
+        );
+        j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
+        assertNull(p.getLastBuild());
+    }
+
+    @Test
+    public void testTriggerWithWildcardBranchNotMatch3() throws Exception {
+        FreeStyleProject p = j.createFreeStyleProject();
+
+        p.addTrigger(new GitStatusTrigger(Arrays.asList(
+            new GitStatusTarget(
+                "https://github.com/ikedam/git-status-trigger-plugin",
+                "*/test"
+            )
+        )));
+
+        j.configRoundtrip((Item)p);
+
+        j.requestGitNotification(
+            "https://github.com/ikedam/git-status-trigger-plugin",
+            "feature/test/newfeature"
+        );
+        j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
+        assertNull(p.getLastBuild());
+    }
+
+    @Test
+    public void testTriggerWithWildcardBranchNotMatch4() throws Exception {
+        FreeStyleProject p = j.createFreeStyleProject();
+
+        p.addTrigger(new GitStatusTrigger(Arrays.asList(
+            new GitStatusTarget(
+                "https://github.com/ikedam/git-status-trigger-plugin",
+                "feature/*"
+            )
+        )));
+
+        j.configRoundtrip((Item)p);
+
+        j.requestGitNotification(
+            "https://github.com/ikedam/git-status-trigger-plugin",
+            "some/feature/newfeature"
         );
         j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
         assertNull(p.getLastBuild());
@@ -423,7 +499,7 @@ public class GitStatusTriggerTest {
 
         j.requestGitNotification(
             "https://github.com/ikedam/git-status-trigger-plugin",
-            "master"
+            "develop"
         );
         j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
         assertNull(p.getLastBuild());

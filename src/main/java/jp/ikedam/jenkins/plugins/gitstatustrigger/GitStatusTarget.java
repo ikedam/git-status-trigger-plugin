@@ -93,7 +93,11 @@ public class GitStatusTarget extends AbstractDescribableImpl<GitStatusTarget> {
             return null;
         }
         if (StringUtils.isBlank(getBranches())) {
-            return new GitStatusTriggerCause(uri.toString(), "");
+            if (branches.length > 0) {
+                return new GitStatusTriggerCause(uri.toString(), branches[0]);
+            } else {
+                return new GitStatusTriggerCause(uri.toString(), "");
+            }
         }
         List<String> targetBranches = Lists.transform(
             Arrays.asList(StringUtils.split(getBranches(), ',')),
@@ -126,7 +130,7 @@ public class GitStatusTarget extends AbstractDescribableImpl<GitStatusTarget> {
         }
         String pattern = StringUtils.join(
             Lists.transform(
-                Arrays.asList(StringUtils.split(targetBranch, '*')),
+                Arrays.asList(targetBranch.split("\\*", -1)),
                 new Function<String, String>() {
                     public String apply(String s) {
                         return Pattern.quote(s);
