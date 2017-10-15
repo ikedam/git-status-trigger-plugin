@@ -24,31 +24,39 @@
 
 package jp.ikedam.jenkins.plugins.gitstatustrigger;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
 import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.Extension;
+import hudson.model.AbstractProject;
 import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.plugins.git.GitStatus;
 import hudson.plugins.git.GitStatus.ResponseContributor;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+import jenkins.model.Jenkins;
 
 /**
- *
+ * Trigger builds when git push notification
  */
 public class GitStatusTrigger extends Trigger<Item> {
-    private static Logger LOG = Logger.getLogger(GitStatusTrigger.class.getName());
-    private static List<GitStatusTrigger> all = new ArrayList<GitStatusTrigger>();
+    @Nonnull
+    private static final Logger LOG = Logger.getLogger(GitStatusTrigger.class.getName());
+    @CheckForNull
+    private static List<GitStatusTrigger> allCache = null;
 
     @Nonnull
     private final List<GitStatusTarget> targetList;
@@ -76,7 +84,7 @@ public class GitStatusTrigger extends Trigger<Item> {
     @Override
     public void start(@Nonnull Item project, boolean newInstance) {
         super.start(project, newInstance);
-        all.add(this);
+        clearCache();
     }
 
     /**
@@ -85,7 +93,85 @@ public class GitStatusTrigger extends Trigger<Item> {
     @Override
     public void stop() {
         super.stop();
-        all.remove(this);
+        clearCache();
+    }
+
+    private static void clearCache() {
+        allCache = null;
+    }
+
+    private static void BroadCastNotifyAll(URIish uri, String[] branches) {
+        List<GitStatusTrigger> cache = getItemsToNotify();
+        if (cache == null) {
+            // In case Jenkins.instance == null
+            LOG.warning("Ignore push notification as Jenkins is not ready.");
+            return;
+        }
+        for (GitStatusTrigger t: cache) {
+            t.onNotifyCommit(uri, branches);
+        }
+    }
+
+    @CheckForNull
+    private synchronized static List<GitStatusTrigger> getItemsToNotify() {
+        if (allCache == null) {
+            allCache = scanItemsToNotify();
+        }
+        return allCache;
+    }
+
+    @CheckForNull
+    private static List<GitStatusTrigger> scanItemsToNotify() {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins == null) {
+            return null;
+        }
+        List<GitStatusTrigger> scanned = new ArrayList<GitStatusTrigger>();
+        for (Item item: jenkins.getAllItems()) {
+            GitStatusTrigger t = getGitStatusTrigger(item);
+            if (t != null) {
+                scanned.add(t);
+            }
+        }
+        return scanned;
+    }
+
+    private static GitStatusTrigger getGitStatusTrigger(Item item) {
+        if (item instanceof AbstractProject) {
+            return ((AbstractProject<?, ?>)item).getTrigger(GitStatusTrigger.class);
+        }
+        // Support Map<TriggerDescriptor,Trigger<?>> getTriggers()
+        // In case of ParameterizedJobMixIn.ParameterizedJob
+        Method m = null;
+        try {
+            m = item.getClass().getMethod("getTriggers");
+        } catch(NoSuchMethodException e) {
+            return null;
+        } catch(SecurityException e) {
+            return null;
+        }
+        Object ret = null;
+        try {
+            ret = m.invoke(item);
+        } catch (IllegalAccessException e) {
+            return null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        } catch (InvocationTargetException e) {
+            return null;
+        }
+        if (ret == null) {
+            return null;
+        }
+        if (!(ret instanceof Map)) {
+            return null;
+        }
+        for (Object t: ((Map<?, ?>)ret).values()) {
+            if (t instanceof GitStatusTrigger) {
+                return (GitStatusTrigger)t;
+            }
+        }
+        return null;
     }
 
     /**
@@ -105,6 +191,10 @@ public class GitStatusTrigger extends Trigger<Item> {
     }
 
     private void scheduleBuild(@Nonnull GitStatusTriggerCause c) {
+        if (job == null) {
+            // Strange case that start() is not called.
+            return;
+        }
         if (!(job instanceof BuildableItem)) {
             LOG.log(
                 Level.WARNING,
@@ -154,9 +244,7 @@ public class GitStatusTrigger extends Trigger<Item> {
          */
         @Override
         public List<ResponseContributor> onNotifyCommit(URIish uri, String... branches) {
-            for (GitStatusTrigger t: GitStatusTrigger.all) {
-                t.onNotifyCommit(uri, branches);
-            }
+            GitStatusTrigger.BroadCastNotifyAll(uri, branches);
             return Collections.emptyList();
         }
     }
