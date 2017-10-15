@@ -26,6 +26,7 @@ package jp.ikedam.jenkins.plugins.gitstatustrigger;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -38,7 +39,6 @@ import org.kohsuke.stapler.QueryParameter;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
@@ -120,15 +120,22 @@ public class GitStatusTarget extends AbstractDescribableImpl<GitStatusTarget> {
      * @param branch actual branch
      * @return {@code true} if contains
      */
-    @SuppressFBWarnings(
-        value="RE_BAD_SYNTAX_FOR_REGULAR_EXPRESSION",
-        justification="I know what I do"
-    )
     protected boolean isMatchBranch(@Nonnull String targetBranch, @Nonnull String branch) {
         if (!targetBranch.contains("*")) {
             return targetBranch.equals(branch);
         }
-        return branch.matches(targetBranch.replaceAll("*", ".*"));
+        String pattern = StringUtils.join(
+            Lists.transform(
+                Arrays.asList(StringUtils.split(targetBranch, '*')),
+                new Function<String, String>() {
+                    public String apply(String s) {
+                        return Pattern.quote(s);
+                    }
+                }
+            ),
+            ".*"
+        );
+        return branch.matches(pattern);
     }
 
     @Extension

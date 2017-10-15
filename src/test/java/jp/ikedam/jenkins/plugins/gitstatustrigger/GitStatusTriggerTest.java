@@ -38,6 +38,7 @@ import org.jvnet.hudson.test.JenkinsRule.WebClient;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
+import hudson.model.Job;
 
 /**
  * Tests for {@link GitStatusTrigger}
@@ -50,8 +51,8 @@ public class GitStatusTriggerTest {
 
     @After
     public void cleanAllJobs() throws Exception {
-        for (Item item: j.jenkins.getAllItems()) {
-            item.delete();
+        for (Job<?, ?> job: j.jenkins.getAllItems(Job.class)) {
+            job.delete();
         }
     }
 
@@ -233,7 +234,7 @@ public class GitStatusTriggerTest {
     }
 
     @Test
-    public void testTriggerWithWildCardBranchMatch1() throws Exception {
+    public void testTriggerWithWildcardBranchMatch1() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
 
         p.addTrigger(new GitStatusTrigger(Arrays.asList(
@@ -254,7 +255,7 @@ public class GitStatusTriggerTest {
     }
 
     @Test
-    public void testTriggerWithWildCardBranchMatch2() throws Exception {
+    public void testTriggerWithWildcardBranchMatch2() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
 
         p.addTrigger(new GitStatusTrigger(Arrays.asList(
@@ -275,7 +276,7 @@ public class GitStatusTriggerTest {
     }
 
     @Test
-    public void testTriggerWithWildCardBranchNotMatch1() throws Exception {
+    public void testTriggerWithWildcardBranchNotMatch1() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
 
         p.addTrigger(new GitStatusTrigger(Arrays.asList(
@@ -294,7 +295,7 @@ public class GitStatusTriggerTest {
         assertNull(p.getLastBuild());
     }
     @Test
-    public void testTriggerWithWildCardBranchNotMatch2() throws Exception {
+    public void testTriggerWithWildcardBranchNotMatch2() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
 
         p.addTrigger(new GitStatusTrigger(Arrays.asList(
