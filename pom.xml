@@ -119,4 +119,16 @@
     </dependency>
   </dependencies>
 
+  <distributionManagement>
+    <repository>
+      <id>internal.repo.release</id>
+      <name>Internal Repository for Release</name>
+      <url>${internal.repo.path}/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>internal.repo.snapshot</id>
+      <name>Internal Repository for snapshot</name>
+      <url>${internal.repo.path}/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>
