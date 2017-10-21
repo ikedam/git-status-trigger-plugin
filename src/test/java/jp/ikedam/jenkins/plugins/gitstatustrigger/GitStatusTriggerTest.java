@@ -37,6 +37,8 @@ import org.jvnet.hudson.test.JenkinsRule.WebClient;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
+import hudson.security.GlobalMatrixAuthorizationStrategy;
+import jenkins.model.Jenkins;
 
 /**
  * Tests for {@link GitStatusTrigger}
@@ -563,5 +565,29 @@ public class GitStatusTriggerTest {
         assertNotNull(c);
         assertEquals("https://github.com/ikedam/git-status-trigger-plugin", c.getUri());
         assertEquals("", c.getBranch());
+    }
+
+    @Test
+    public void testPermission() throws Exception {
+        j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
+        GlobalMatrixAuthorizationStrategy auth = new GlobalMatrixAuthorizationStrategy();
+        auth.add(Jenkins.ADMINISTER, "admin");
+        j.jenkins.setAuthorizationStrategy(auth);
+
+        FreeStyleProject p = j.createFreeStyleProject();
+        p.addTrigger(new GitStatusTrigger(Arrays.asList(
+            new GitStatusTarget(
+                "https://github.com/ikedam/git-status-trigger-plugin",
+                ""
+            )
+        )));
+        // j.configRoundtrip((Item)p);
+        j.submit(j.createWebClient().login("admin").getPage((Item)p, "configure").getFormByName("config"));
+
+        j.requestGitNotification(
+            "https://github.com/ikedam/git-status-trigger-plugin"
+        );
+        j.waitUntilNoActivityUpTo(ACTIVITY_WAIT);
+        assertNotNull(p.getLastBuild());
     }
 }

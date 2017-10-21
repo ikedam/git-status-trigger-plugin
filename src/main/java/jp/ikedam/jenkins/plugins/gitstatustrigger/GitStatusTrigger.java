@@ -36,6 +36,8 @@ import java.util.logging.Logger;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 
+import org.acegisecurity.context.SecurityContext;
+import org.acegisecurity.context.SecurityContextHolder;
 import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -45,6 +47,7 @@ import hudson.model.BuildableItem;
 import hudson.model.Item;
 import hudson.plugins.git.GitStatus;
 import hudson.plugins.git.GitStatus.ResponseContributor;
+import hudson.security.ACL;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import jenkins.model.Jenkins;
@@ -244,7 +247,12 @@ public class GitStatusTrigger extends Trigger<Item> {
          */
         @Override
         public List<ResponseContributor> onNotifyCommit(URIish uri, String... branches) {
-            GitStatusTrigger.BroadCastNotifyAll(uri, branches);
+            SecurityContext orig = ACL.impersonate(ACL.SYSTEM);
+            try {
+                GitStatusTrigger.BroadCastNotifyAll(uri, branches);
+            } finally {
+                SecurityContextHolder.setContext(orig);
+            }
             return Collections.emptyList();
         }
     }
